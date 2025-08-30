@@ -1,4 +1,4 @@
-#StockBot
+StockBot
 
 The IMC Prosperity 2025 competition was my first real exposure to the world of trading. Throughout each of the rounds, I learned more and more about the processes that made this up, and also how absolutely important the element of analysis was. In the competition, I only focused on the analysis of some signals and using them as determinants, ignoring how much more backtesting and exploring various approaches could have helped me. Over the course of the year, as I learned more about this, my goal became wanting to apply that knowledge by actually creating my own trading engine, replete with both determinant analysis and backtesting, to be able to construct something similar to the kind of constructions I have seen many quantitative analysts focus on as well.
 
