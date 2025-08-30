@@ -4,7 +4,7 @@ Something that is also very important to me is being able to understand and impl
 
 I want to complete this project in stages, with my code improving and becoming much more concise as I begin to implement more and more of what I have learned. For now, StockBot is composed of:
 
-1️⃣ Analysis of the closing prices of any stock over a particular period of time. I used rolling windows of 10 days each to support and work with the limitations of the API (Polygon.io) that I was using to scrape data. Using this information, I was able to determine simple moving averages, exponential moving averages, and the Bollinger Bands of the closing prices. I used the Bollinger Band limitation of 2 standard deviations to catch outliers rather than the standard 1.5 used in many statistcal coverages, as I felt that the emphasis on financial data called for such a difference, and the precedence was already there because the technique has been using in trading analysis quite frequently. 
+1️⃣ Analysis of the closing prices of any stock over a particular period of time. I used rolling windows of 10 days each to support and work with the limitations of the API (Polygon.io) that I was using to scrape data. Using this information, I was able to determine simple moving averages, exponential moving averages, relative strength indices, and the Bollinger Bands of the closing prices. I used the Bollinger Band limitation of 2 standard deviations to catch outliers rather than the standard 1.5 used in many statistcal coverages, as I felt that the emphasis on financial data called for such a difference, and the precedence was already there because the technique has been using in trading analysis quite frequently. 
 
 But I had another question: how would I interpret all this data?
 
