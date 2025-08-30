@@ -1,0 +1,349 @@
+from polygon import RESTClient
+import matplotlib.pyplot as plt
+import statistics as stat
+import pandas
+import seaborn
+import numpy as np
+import math
+import pandas_datareader
+
+client = RESTClient(#APIKEY) 
+
+closeprices = []
+smasrw = []
+emasrw = []
+bbsrwhigh = []
+bbsrwlow = []
+
+stockname = "AAPL"
+
+for a in client.list_aggs(
+    stockname,
+    1,
+    "day",
+    "2025-01-01",
+    "2025-03-01",
+    limit=50000,
+):
+    closeprices.append(a.close)
+dates = pandas.date_range("20250101", periods=39)
+closes= pandas.DataFrame(closeprices, index= dates, columns = ["Closing Price"])
+closes.plot()
+plt.show()
+
+last = closes.values[-1]
+
+class Engine (stockname):
+    def __init__(self, shares, capital, Trade, stockvalue, eligshares, log, sharesmore, profit, current):
+        shares = 0
+        self.shares = shares 
+        self.capital = capital
+        self.Trade = Trade
+        self.stockvalue = stockvalue
+        self.eligshares = eligshares
+        self.log = log
+        self.sharesmore = sharesmore
+        self.profit = profit
+        self.current = current
+
+    def buy(self, stockname):
+        print (f'{stockname} @ ${last} per')
+        eligshares = round(capital / last)
+        sharesmore = print ('how many')
+        if sharesmore > eligshares:
+            self.Trade is False
+        else:
+            self.Trade is True 
+            shares += sharesmore
+            self.stockvalue = shares * last
+            capital -= self.stockvalue
+
+    def sell(self, stockname):
+        sellshares = print(f'how many shares of {stockname} to sell @ ${last}')
+        if sellshares < self.shares:
+            self.Trade is True
+            sellvalue = sellshares * last
+            shares -= sellshares
+            self.capital += sellvalue
+            self.profit = sellvalue - self.stockvalue
+        else:
+            self.Trade is False
+        
+    def orderbook(self):
+        if self.Trade is True:
+            if Engine.buy(stockname):
+                self.log.append(f'{stockname} BUY: {self.sharesmore} @ ${last} FOR {((self.sharesmore) * (last))}')
+                self.current.append(((self.sharesmore) * (last)))
+            if Engine.sell(stockname):
+                self.log.append(f'{stockname} SELL: {self.sharesmore} @ ${last}, PROFIT: {self.profit}')
+
+for i in range(0, len(closeprices) - 9):
+    smawindow = pandas.Series(closes.loc[dates[i: (i + 10)], "Closing Price"].values, index = range(0, 10))
+    sma = smawindow.values.mean()
+    smasrw.append(sma)
+
+smas = pandas.DataFrame(smasrw, index = dates[9:], columns = ["SMA"])
+
+k = 2 / 11 # 2 / (10 + 1), ema smoothing factor
+
+for i in range(1, len(smas)):
+    emawindow = pandas.DataFrame(smas.values, index  = range(0, len(smas)))
+    ema = (emawindow.values[i] * k) + (emawindow.values[i-1] * (1 - k))
+    emasrw.append(ema)
+
+emas = pandas.DataFrame(emasrw, index= dates[10:], columns = ["EMA"] )
+emas.plot()
+plt.show()
+
+for i in smas.values:
+    stdev = np.std(i)
+    bbsrwhigh.append(i + ( 2 * stdev))
+    bbsrwlow.append(i - (2 * stdev))
+
+bollingershigh = pandas.DataFrame(bbsrwhigh, index = dates[9:], columns=["High"])
+bollingerslow = pandas.DataFrame(bbsrwlow, index = dates[9:], columns=["Low"])
+bollingers = pandas.concat([bollingershigh, bollingerslow], axis = 1) 
+
+#graph w error bars later
+
+closes1 = closes.head(len(closes) - 1)
+closes2 = closes.tail(len(closes) - 1)
+changes = []
+rsirw = []
+
+for u in range (0, len(closes) - 9):
+    closes1window = pandas.DataFrame(closes1.values[u: (u + 10)])
+    closes2window = pandas.DataFrame(closes2.values[u: (u + 10)])
+    for i in range(0, len(closes2window.values)):
+        changes.append(int(closes2window.values[i]) - int(closes1window.values[i]))
+    gains = filter(lambda u: u >= 0, changes)
+    losses = filter(lambda u: u < 0, changes)
+    rsi = 100 - (100 / (1 + ((stat.mean(gains) / abs((stat.mean(losses)))))))
+    rsirw.append(rsi)
+
+rsis = pandas.DataFrame(rsirw, index = dates[9:], columns = ["RSI"]).abs()
+rsis.plot()
+plt.show()
+
+errors1 = []
+errors2 = []
+
+for i in range(0, len(closes) - 9):
+    xs = range(1, 11)
+    ys = closes.values[i : (i + 10)]
+    xsavg = np.mean(xs)
+    ysavg = np.mean(ys)
+    x1 = 0 
+    y1 = 0
+    for u in range(0, len(xs)):
+        x1 += (int(xs[u]) - xsavg)
+        y1 += (int(ys[u]) - ysavg)
+    m = (x1 * y1) / (x1 ** 2)
+    b = ysavg - (m * xsavg)
+    predictx = (m * 11) + b
+    realx = closes.values[i + 10]
+    errors1.append(abs(realx - predictx))
+    if realx <= predictx:
+        Engine.buy(stockname)
+    else:
+        Engine.sell(stockname)
+    basis = pandas.DataFrame(ys, index = xs, columns = ["Closing Prices"])
+    fig, ax = plt.subplot()
+    seaborn.regplot(x = range(1, 12), y = 'Closing Prices', data = basis, ax = ax, ci = None)
+    ax.plot(11, realx)
+    plt.show()
+
+errors3 = []
+errors4 = []
+
+for i in range(0, len(smas)):
+    mags = {}
+    closesref = closes.values[i: (i + 10)]
+    smaval = ((i + 9), smas[i])
+    for u in range (0, len(closesref)):
+        closept = (u, closesref[u])
+        mag = math.sqrt(((smaval[0] - closept[0])** 2) + ( (smaval[1] - closept[1]) ** 2))
+        theta = math.atan((smaval[1] - closept[1]) / (smaval[0] - closept[0]))
+        mags [theta] = mag
+    magsabove = {}
+    magsbelow = {}
+    for p in mags.keys:
+        if p >= 180:
+            magsabove [p] = mags[p]
+        elif p < 180:
+            magsbelow [p] = mags[p]
+    val1 = min(magsabove.values())
+    val2 = min(magsbelow.values())
+    m1 = closesref[mags.index(val1)] / closesref.index([mags.index(val1)])
+    b1 =  (closesref[mags.index(val1)] - (m * closesref.index([mags.index(val1)])))
+    m2 = closesref[mags.index(val2)] / closesref.index([mags.index(val2)])
+    b1 =  (closesref[mags.index(val2)] - (m * closesref.index([mags.index(val2)])))
+    mreal = (m1 + m2) / 2
+    breal = smas.values[i] - (mreal * i)
+    predicted = ((mreal * (i + 10)) + breal)
+    if closes.values[i + 10] <= ((mreal * (i + 10)) + breal):
+        error3 = closes.values[i + 10] - predicted
+        errors3.append(abs(error3))
+        Engine.buy(stockname)
+    else:
+        error3 = closes.values[i + 10] - predicted
+        errors3.append(abs(error3))
+        Engine.sell(stockname)
+
+closes2 = closes
+        
+for i in range(0, len(closes.values)):
+    if closes.values[i] > bollingers["High"][i] or i < bollingers['Low'][i]:
+        closes.drop(closes.index[i])
+
+for i in range(0, len(closes) - 9):
+    xs = range(1, 11)
+    ys = closes.values[i : (i + 10)]
+    xsavg = np.mean(xs)
+    ysavg = np.mean(ys)
+    x1 = 0 
+    y1 = 0
+    for u in range(0, len(xs)):
+        x1 += (int(xs[u]) - xsavg)
+        y1 += (int(ys[u]) - ysavg)
+    m = (x1 * y1) / (x1 ** 2)
+    b = ysavg - (m * xsavg)
+    predictx = (m * 11) + b
+    realx = closes.values[i + 10]
+    if realx <= predictx:
+        Engine.buy(stockname)
+    else:
+        Engine.sell(stockname)
+    errors2.append(abs(realx - predictx))
+    basis = pandas.DataFrame(ys, index = xs, columns = ["Closing Prices"])
+    fig, ax = plt.subplot()
+    seaborn.regplot(x = range(1, 12), y = 'Closing Prices', data = basis, ax = ax, ci = None)
+    ax.plot(11, realx)
+    plt.show()
+    plt.plot(x = range(0, len(errors1)), y1 = errors1, y2 = errors2)
+    plt.show()
+
+for i in range(0, len(smas)):
+    mags = {}
+    closesref = closes.values[i: (i + 10)]
+    smaval = ((i + 9), smas[i])
+    for u in range (0, len(closesref)):
+        closept = (u, closesref[u])
+        mag = math.sqrt(((smaval[0] - closept[0])** 2) + ( (smaval[1] - closept[1]) ** 2))
+        theta = math.atan((smaval[1] - closept[1]) / (smaval[0] - closept[0]))
+        mags [theta] = mag
+    magsabove = {}
+    magsbelow = {}
+    for p in mags.keys:
+        if p >= 180:
+            magsabove [p] = mags[p]
+        elif p < 180:
+            magsbelow [p] = mags[p]
+    val1 = min(magsabove.values())
+    val2 = min(magsbelow.values())
+    m1 = closesref[mags.index(val1)] / closesref.index([mags.index(val1)])
+    b1 =  (closesref[mags.index(val1)] - (m * closesref.index([mags.index(val1)])))
+    m2 = closesref[mags.index(val2)] / closesref.index([mags.index(val2)])
+    b1 =  (closesref[mags.index(val2)] - (m * closesref.index([mags.index(val2)])))
+    mreal = (m1 + m2) / 2
+    breal = smas.values[i] - (mreal * i)
+    predicted = ((mreal * (i + 10)) + breal)
+    if closes.values[i + 10] <= ((mreal * (i + 10)) + breal): 
+        error4 = closes.values[i + 10] - predicted
+        errors4.append(abs(error4))
+        Engine.buy(stockname)
+    else:
+        error4 = closes.values[i + 10] - predicted
+        errors4.appendabs((error4))
+        Engine.sell(stockname)
+    plt.plot(x = range(0, len(errors1)), y1 = errors3, y2 = errors4)
+    plt.show()
+
+errors5 = []
+errors6 = []
+
+for i in range(0, len(closes2) - 9):
+    resids = []
+    o2s = []
+    returns1 = closes2.values[i : (i + 10)]
+    returns = []
+    lls = [0]
+    for l in range(1, len(returns1)):
+        returns.append((returns1[l] - returns[(l - 0)]) / returns[l])
+    sma = smas.values[i] 
+    for u in returns:
+        resids.append(u - sma)
+    o20 = (1 / (len(returns) - 1)) * ((t ** 2) for t in resids)
+    o2s.append(o20)
+    ws = list(range(0.000000, 0.000005))
+    aa = list(range(0, 1))
+    bs = list(range(0, 1))
+    for w in ws, a in aa, b in bs:
+        if (a + b) < 1:
+            for l in returns:
+                o2s.append(w + (a * (l ** 2)) + (b * o2s.index(returns.index(l))))
+            lls.append(-0.5 * (((math.log(2 * math.pi)) + (math.log(o2s.index(returns.index(p)))) + 
+                                (i / (o2s.index(returns.index(p))))))for p in returns) 
+        if lls[-1] == max(lls):
+            aa = list(filter(lambda x: x % (a - 0) == 0, aa))
+            bs = list(filter(lambda x: x % (b - 0) == 0, bs))
+            ws = ws[w:]
+
+    errors5.append(abs(max(lls) - u) for u in returns)
+
+for i in range(0, len(closes) - 9):
+    resids = []
+    o2s = []
+    returns1 = closes.values[i : (i + 10)]
+    returns = []
+    lls = [0]
+    for l in range(1, len(returns1)):
+        returns.append((returns1[l] - returns[(l - 0)]) / returns[l])
+    sma = smas.values[i] 
+    for u in returns:
+        resids.append(u - sma)
+    o20 = (1 / (len(returns) - 1)) * ((t ** 2) for t in resids)
+    o2s.append(o20)
+    ws = list(range(0.000000, 0.000005))
+    aa = list(range(0, 1))
+    bs = list(range(0, 1))
+    for w in ws, a in aa, b in bs:
+        if (a + b) < 1:
+            for l in returns:
+                o2s.append(w + (a * (l ** 2)) + (b * o2s.index(returns.index(l))))
+            lls.append(-0.5 * (((math.log(2 * math.pi)) + (math.log(o2s.index(returns.index(p)))) + 
+                                (i / (o2s.index(returns.index(p))))))for p in returns) 
+        if lls[-1] == max(lls):
+            aa = list(filter(lambda x: x % (a - 0) == 0, aa))
+            bs = list(filter(lambda x: x % (b - 0) == 0, bs))
+            ws = ws[w:]
+
+    errors5.append(abs(max(lls) - u) for u in returns)
+
+mae1 = np.mean(abs(errors1))
+mae2 = np.mean(abs(errors2))
+mae3 = np.mean(abs(errors3))
+mae4 = np.mean(abs(errors4))
+mae5 = np.mean(abs(errors5))
+mae6 = np.mean(abs(errors6))
+
+if (mae1 < mae2) or (mae3 < mae4) or (mae5 < mae6):
+    for i in range (0, len(closes) - 9):
+        diffs = []
+        origs = closes.values[i: (i + 10)]
+        for u in range(1, len(origs)):
+            diffs.append(round((origs[u] - origs[u-1]) / origs[u-1]), 2)
+        rp = np.mean(diffs)
+        stdevrp = np.std(rp)
+        rf = (pandas_datareader.DataReader('DGS1MO', 'fred', dates[(i + 9)])) / 1200
+        sharpe = (rp * rf) / stdev
+else:
+    for i in range (0, len(closes2) - 9):
+        diffs = []
+        origs = closes2.values[i: (i + 10)]
+        for u in range(1, len(origs)):
+            diffs.append(round((origs[u] - origs[u-1]) / origs[u-1]), 2)
+        rp = np.mean(diffs)
+        stdevrp = np.std(rp)
+        rf = (pandas_datareader.DataReader('DGS1MO', 'fred', dates[(i + 9)])) / 1200
+        sharpe = (rp * rf) / stdev
