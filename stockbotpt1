@@ -147,6 +147,11 @@ for i in range(0, len(closes) - 9):
         Engine.buy(stockname)
     else:
         Engine.sell(stockname)
+    if realx != predictx:
+        m = (realx - ys[0])
+        b = realx / (m * 11)
+        xs = range (1, 12)
+        ys = closes.values [i : (i + 11)]
     basis = pandas.DataFrame(ys, index = xs, columns = ["Closing Prices"])
     fig, ax = plt.subplot()
     seaborn.regplot(x = range(1, 12), y = 'Closing Prices', data = basis, ax = ax, ci = None)
