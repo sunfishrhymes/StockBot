@@ -111,7 +111,7 @@ closes2 = closes.tail(len(closes) - 1)
 changes = []
 rsirw = []
 
-for u in range (0, len(closes) - 9):
+for u in range (0, len(closes) - 9): #weird passing value error here??
     closes1window = pandas.DataFrame(closes1.values[u: (u + 10)])
     closes2window = pandas.DataFrame(closes2.values[u: (u + 10)])
     for i in range(0, len(closes2window.values)):
@@ -223,6 +223,9 @@ for i in range(0, len(closes) - 9):
     plt.plot(x = range(0, len(errors1)), y1 = errors1, y2 = errors2)
     plt.show()
 
+mae1 = np.mean(abs(errors1))
+mae2 = np.mean(abs(errors2))
+
 for i in range(0, len(smas)):
     mags = {}
     closesref = closes.values[i: (i + 10)]
@@ -248,16 +251,19 @@ for i in range(0, len(smas)):
     mreal = (m1 + m2) / 2
     breal = smas.values[i] - (mreal * i)
     predicted = ((mreal * (i + 10)) + breal)
-    if closes.values[i + 10] <= ((mreal * (i + 10)) + breal): 
+    if closes.values[i + 10] <= ((mreal * (i + 10)) + breal): #mean reversion attempt
         error4 = closes.values[i + 10] - predicted
         errors4.append(abs(error4))
         Engine.buy(stockname)
     else:
         error4 = closes.values[i + 10] - predicted
-        errors4.appendabs((error4))
+        errors4.append(abs((error4)))
         Engine.sell(stockname)
     plt.plot(x = range(0, len(errors1)), y1 = errors3, y2 = errors4)
     plt.show()
+
+mae3 = np.mean(abs(errors3))
+mae4 = np.mean(abs(errors4))
 
 errors5 = []
 errors6 = []
@@ -318,14 +324,11 @@ for i in range(0, len(closes) - 9):
             bs = list(filter(lambda x: x % (b - 0) == 0, bs))
             ws = ws[w:]
 
-    errors5.append(abs(max(lls) - u) for u in returns)
+    errors6.append(abs(max(lls) - u) for u in returns)
 
-mae1 = np.mean(abs(errors1))
-mae2 = np.mean(abs(errors2))
-mae3 = np.mean(abs(errors3))
-mae4 = np.mean(abs(errors4))
 mae5 = np.mean(abs(errors5))
 mae6 = np.mean(abs(errors6))
+
 
 if (mae1 < mae2) or (mae3 < mae4) or (mae5 < mae6):
     for i in range (0, len(closes) - 9):
@@ -347,3 +350,4 @@ else:
         stdevrp = np.std(rp)
         rf = (pandas_datareader.DataReader('DGS1MO', 'fred', dates[(i + 9)])) / 1200
         sharpe = (rp * rf) / stdev
+
